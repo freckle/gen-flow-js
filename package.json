@@ -1,33 +1,22 @@
 {
-  "name": "@freckle/package-name",
+  "name": "@freckle/gen-flow",
   "version": "1.0.0",
-  "description": "TODO: Package description",
+  "description": "Generate Flow interfaces from TypeScript",
   "author": "Freckle",
   "license": "MIT",
+  "bin": "./dist/index.js",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/freckle/package-name-js.git"
+    "url": "git+https://github.com/freckle/gen-flow-js.git"
   },
   "scripts": {
-    "build": "rm -r dist && tsc -d && node gen-flow.js",
-    "test": "jest && flow",
-    "format": "prettier --write 'src/**/*.ts'"
+    "build": "rm -r dist && cp -r src dist"
   },
   "dependencies": {
-    "lodash": "^4.17.21"
-  },
-  "devDependencies": {
-    "@types/jest": "^28.1.1",
-    "@types/lodash": "^4.14.182",
-    "cpy-cli": "3.1.1",
-    "flow-bin": "0.110.0",
     "flowgen": "^1.17.0",
-    "jest": "^28.1.3",
-    "jest-environment-jsdom": "^29.5.0",
-    "prettier": "^2.5.1",
-    "ts-jest": "^28.0.4",
-    "typescript": "^4.7.3"
+    "lodash": "^4.17.21",
+    "piscina": "^3.2.0"
   },
   "packageManager": "yarn@3.4.1"
 }

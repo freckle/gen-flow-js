@@ -1,27 +1,45 @@
-# npm Package Template
+# @freckle/gen-flow
 
-Our custom template repository for creating a package published to npm.
-
-[Creating a repository from a template][docs].
-
-[docs]: https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template
-
-**NOTE**: Be sure to look for strings like "TODO", "Package name", or "package-name" and update
-them accordingly.
+Generate Flow type interfaces from TypeScript interfaces.
 
 ## Install
 
 ```sh
-yarn add package-name
+yarn add -D @freckle/gen-flow
 ```
 
-## Versioning and release process
+## Usage
 
-See [RELEASE.md](./RELEASE.md).
+Generate Flow interfaces given a path containing TypeScript interfaces (`.d.ts`
+files). The Flow interfaces will be adjacent to the TypeScript interfaces.
 
-## process(input)
+```sh
+> ls dist/
+index.d.ts index.js
 
-TODO: Document public API for package.
+> yarn run gen-flow dist
+
+> ls dist/
+index.d.ts index.js index.js.flow
+```
+
+This can be used as part of a build process in a project:
+
+```json
+{
+  "name": "my-package",
+  "scripts": {
+    "build": "yarn clean && tsc -d && yarn gen-flow",
+    "gen-flow": "gen-flow dist",
+    "clean": "rm -r -f dist/""
+  }
+}
+
+```
+
+## Versioning and release process##
+
+See [RELEASE.md](./RELEASE.md)
 
 ---
 
