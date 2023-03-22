@@ -1,19 +1,23 @@
-const {beautify, compiler} = require('flowgen')
-const fs = require('fs')
-const path = require('path')
+import {beautify, compiler} from "flowgen"
+import fs from "node:fs"
+import path from "node:path"
 
-module.exports = async paths => {
+module.exports = async (paths: string[]) => {
   for (const p of paths) {
-    await process(p)
+    await processFile(p)
   }
 }
 
-const process = f =>
+const processFile = (f: string): Promise<void> =>
   new Promise((resolve, reject) => {
     const flowdef = beautify(compiler.compileDefinitionFile(f, {inexact: false}))
     const fixedFlowdef = fixFlowdef(flowdef)
     const p = path.parse(f)
-    const name = /(.*).d/.exec(p.name)[1]
+    const regexExec = /(.*).d/.exec(p.name)
+    if (regexExec === null) {
+      throw new Error('Unexpected RegExp failure')
+    }
+    const name = regexExec[1]
     const filename = `${p.dir}/${name}.js.flow`
     fs.writeFile(
       filename,
@@ -26,7 +30,7 @@ ${fixedFlowdef}`,
     )
   })
 
-const fixFlowdef = module => {
+const fixFlowdef = (module: string): string => {
   return (
     module
       // account for special cases
