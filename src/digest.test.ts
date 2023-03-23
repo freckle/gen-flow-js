@@ -1,4 +1,4 @@
-import {computeDigest, compare} from "./digest"
+import {computeDigest, compare} from './digest'
 
 jest.mock('node:fs', () => ({
   readFileSync: () => 'test'
@@ -14,7 +14,7 @@ describe('Digest', () => {
       })
     })
   })
-  
+
   describe('compare', () => {
     it('succeeds with identical Digests', () => {
       const a = {
@@ -28,7 +28,7 @@ describe('Digest', () => {
       const res = compare(a, b)
       expect(res).toEqual(true)
     })
-    
+
     it('rejects Digests of different files', () => {
       const a = {
         filePath: 'path/to/file',
