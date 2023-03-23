@@ -1,6 +1,6 @@
-import {beautify, compiler} from "flowgen"
-import fs from "node:fs"
-import path from "node:path"
+import {beautify, compiler} from 'flowgen'
+import fs from 'node:fs'
+import path from 'node:path'
 import find from 'lodash/find'
 
 import {Digest, computeDigest, compare} from './digest'
@@ -25,41 +25,41 @@ const flowDefFilePath = (filePath: string): string => {
   return `${parsedPath.dir}/${name}.js.flow`
 }
 
-const processFile = async (filePath: string, digests: Digest[]): Promise<Digest> =>
-  {
-    const outputFilePath = flowDefFilePath(filePath)
-    const hasGeneratedInterface = fs.existsSync(outputFilePath)
-    const incomingDigest = computeDigest(filePath)
-    
-    if (!hasGeneratedInterface) {
+const processFile = async (filePath: string, digests: Digest[]): Promise<Digest> => {
+  const outputFilePath = flowDefFilePath(filePath)
+  const hasGeneratedInterface = fs.existsSync(outputFilePath)
+  const incomingDigest = computeDigest(filePath)
+
+  if (!hasGeneratedInterface) {
+    await genFlowDef(filePath)
+    return incomingDigest
+  } else {
+    const matchingDigest = find(digests, cachedDigest => compare(incomingDigest, cachedDigest))
+    if (matchingDigest !== undefined) {
+      return matchingDigest
+    } else {
       await genFlowDef(filePath)
       return incomingDigest
-    } else {
-      const matchingDigest = find(digests, cachedDigest => compare(incomingDigest, cachedDigest))
-      if (matchingDigest !== undefined) {
-        return matchingDigest
-      } else {
-        await genFlowDef(filePath)
-        return incomingDigest
-      }
     }
   }
+}
 
-const genFlowDef = (filePath: string): Promise<void> => new Promise((resolve, reject) => {
-  const outputFilePath = flowDefFilePath(filePath)
-  const flowdef = beautify(compiler.compileDefinitionFile(filePath, {inexact: false}))
-  const fixedFlowdef = fixFlowdef(flowdef)
-  
-  fs.writeFile(
-    outputFilePath,
-    `// @flow
+const genFlowDef = (filePath: string): Promise<void> =>
+  new Promise((resolve, reject) => {
+    const outputFilePath = flowDefFilePath(filePath)
+    const flowdef = beautify(compiler.compileDefinitionFile(filePath, {inexact: false}))
+    const fixedFlowdef = fixFlowdef(flowdef)
+
+    fs.writeFile(
+      outputFilePath,
+      `// @flow
 ${fixedFlowdef}`,
-    e => {
-      if (e) reject(e)
-      else resolve()
-    }
-  )
-})
+      e => {
+        if (e) reject(e)
+        else resolve()
+      }
+    )
+  })
 
 const fixFlowdef = (module: string): string => {
   return (

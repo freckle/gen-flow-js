@@ -10,8 +10,8 @@ const ajv = new Ajv()
 const schema: JTDSchemaType<Digest[]> = {
   elements: {
     properties: {
-      filePath: {type: "string"},
-      digest: {type: "string"}
+      filePath: {type: 'string'},
+      digest: {type: 'string'}
     }
   }
 }

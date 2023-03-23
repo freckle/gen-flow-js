@@ -18,5 +18,5 @@ export const computeDigest = (filePath: string): Digest => {
 }
 
 export const compare = (a: Digest, b: Digest): boolean => {
-  return (a.filePath === b.filePath) && (a.digest === b.digest)
+  return a.filePath === b.filePath && a.digest === b.digest
 }
