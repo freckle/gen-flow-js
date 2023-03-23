@@ -11,7 +11,9 @@
     "url": "git+https://github.com/freckle/gen-flow-js.git"
   },
   "scripts": {
-    "build": "tsc -d"
+    "build": "tsc -d",
+    "test": "jest",
+    "format": "prettier --write 'src/**/*.ts'"
   },
   "dependencies": {
     "ajv": "^8.12.0",
@@ -22,8 +24,12 @@
   "packageManager": "yarn@3.4.1",
   "devDependencies": {
     "@types/glob": "^8.1.0",
+    "@types/jest": "^27.4.1",
     "@types/lodash": "^4.14.191",
     "@types/node": "^18.15.5",
+    "jest": "^27.4.7",
+    "prettier": "^2.5.1",
+    "ts-jest": "^27.1.3",
     "typescript": "^5.0.2"
   }
 }
