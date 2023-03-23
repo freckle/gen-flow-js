@@ -1,6 +1,6 @@
 {
   "name": "@freckle/gen-flow",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Generate Flow interfaces from TypeScript",
   "author": "Freckle",
   "license": "MIT",
