@@ -1,22 +1,57 @@
-const {beautify, compiler} = require('flowgen')
-const fs = require('fs')
-const path = require('path')
+import {beautify, compiler} from 'flowgen'
+import fs from 'node:fs'
+import path from 'node:path'
+import find from 'lodash/find'
 
-module.exports = async paths => {
-  for (const p of paths) {
-    await process(p)
+import {Digest, computeDigest, compare} from './digest'
+
+export type WorkerPoolData = {
+  paths: string[]
+  digests: Digest[]
+}
+
+module.exports = async ({paths, digests}: WorkerPoolData): Promise<Digest[]> => {
+  const digestPromises = paths.map(p => processFile(p, digests))
+  return await Promise.all(digestPromises)
+}
+
+const flowDefFilePath = (filePath: string): string => {
+  const parsedPath = path.parse(filePath)
+  const regexExec = /(.*).d/.exec(parsedPath.name)
+  if (regexExec === null) {
+    throw new Error('Unexpected RegExp failure')
+  }
+  const name = regexExec[1]
+  return `${parsedPath.dir}/${name}.js.flow`
+}
+
+const processFile = async (filePath: string, digests: Digest[]): Promise<Digest> => {
+  const outputFilePath = flowDefFilePath(filePath)
+  const hasGeneratedInterface = fs.existsSync(outputFilePath)
+  const incomingDigest = computeDigest(filePath)
+
+  if (!hasGeneratedInterface) {
+    await genFlowDef(filePath)
+    return incomingDigest
+  } else {
+    const matchingDigest = find(digests, cachedDigest => compare(incomingDigest, cachedDigest))
+    if (matchingDigest !== undefined) {
+      return matchingDigest
+    } else {
+      await genFlowDef(filePath)
+      return incomingDigest
+    }
   }
 }
 
-const process = f =>
+const genFlowDef = (filePath: string): Promise<void> =>
   new Promise((resolve, reject) => {
-    const flowdef = beautify(compiler.compileDefinitionFile(f, {inexact: false}))
+    const outputFilePath = flowDefFilePath(filePath)
+    const flowdef = beautify(compiler.compileDefinitionFile(filePath, {inexact: false}))
     const fixedFlowdef = fixFlowdef(flowdef)
-    const p = path.parse(f)
-    const name = /(.*).d/.exec(p.name)[1]
-    const filename = `${p.dir}/${name}.js.flow`
+
     fs.writeFile(
-      filename,
+      outputFilePath,
       `// @flow
 ${fixedFlowdef}`,
       e => {
@@ -26,7 +61,7 @@ ${fixedFlowdef}`,
     )
   })
 
-const fixFlowdef = module => {
+const fixFlowdef = (module: string): string => {
   return (
     module
       // account for special cases
