@@ -1,34 +1,65 @@
 import {beautify, compiler} from "flowgen"
 import fs from "node:fs"
 import path from "node:path"
+import find from 'lodash/find'
 
-module.exports = async (paths: string[]) => {
-  for (const p of paths) {
-    await processFile(p)
-  }
+import {Digest, computeDigest, compare} from './digest'
+
+export type WorkerPoolData = {
+  paths: string[]
+  digests: Digest[]
 }
 
-const processFile = (f: string): Promise<void> =>
-  new Promise((resolve, reject) => {
-    const flowdef = beautify(compiler.compileDefinitionFile(f, {inexact: false}))
-    const fixedFlowdef = fixFlowdef(flowdef)
-    const p = path.parse(f)
-    const regexExec = /(.*).d/.exec(p.name)
-    if (regexExec === null) {
-      throw new Error('Unexpected RegExp failure')
-    }
-    const name = regexExec[1]
-    const filename = `${p.dir}/${name}.js.flow`
-    fs.writeFile(
-      filename,
-      `// @flow
-${fixedFlowdef}`,
-      e => {
-        if (e) reject(e)
-        else resolve()
+module.exports = async ({paths, digests}: WorkerPoolData): Promise<Digest[]> => {
+  const digestPromises = paths.map(p => processFile(p, digests))
+  return await Promise.all(digestPromises)
+}
+
+const flowDefFilePath = (filePath: string): string => {
+  const parsedPath = path.parse(filePath)
+  const regexExec = /(.*).d/.exec(parsedPath.name)
+  if (regexExec === null) {
+    throw new Error('Unexpected RegExp failure')
+  }
+  const name = regexExec[1]
+  return `${parsedPath.dir}/${name}.js.flow`
+}
+
+const processFile = async (filePath: string, digests: Digest[]): Promise<Digest> =>
+  {
+    const outputFilePath = flowDefFilePath(filePath)
+    const hasGeneratedInterface = fs.existsSync(outputFilePath)
+    const incomingDigest = computeDigest(filePath)
+    
+    if (!hasGeneratedInterface) {
+      await genFlowDef(filePath)
+      return incomingDigest
+    } else {
+      const matchingDigest = find(digests, cachedDigest => compare(incomingDigest, cachedDigest))
+      if (matchingDigest !== undefined) {
+        return matchingDigest
+      } else {
+        await genFlowDef(filePath)
+        return incomingDigest
       }
-    )
-  })
+    }
+  }
+
+const genFlowDef = (filePath: string): Promise<void> => new Promise((resolve, reject) => {
+  const outputFilePath = flowDefFilePath(filePath)
+  const flowdef = beautify(compiler.compileDefinitionFile(filePath, {inexact: false}))
+  const fixedFlowdef = fixFlowdef(flowdef)
+  
+  fs.writeFile(
+    outputFilePath,
+    `// @flow
+${fixedFlowdef}`,
+    e => {
+      if (e) reject(e)
+      else resolve()
+    }
+  )
+})
 
 const fixFlowdef = (module: string): string => {
   return (
