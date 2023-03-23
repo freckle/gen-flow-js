@@ -34,8 +34,8 @@ const ajv = new jtd_1.default();
 const schema = {
     elements: {
         properties: {
-            filePath: { type: "string" },
-            digest: { type: "string" }
+            filePath: { type: 'string' },
+            digest: { type: 'string' }
         }
     }
 };

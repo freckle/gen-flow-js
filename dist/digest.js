@@ -17,6 +17,6 @@ const computeDigest = (filePath) => {
 };
 exports.computeDigest = computeDigest;
 const compare = (a, b) => {
-    return (a.filePath === b.filePath) && (a.digest === b.digest);
+    return a.filePath === b.filePath && a.digest === b.digest;
 };
 exports.compare = compare;
