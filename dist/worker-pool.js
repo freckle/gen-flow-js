@@ -6,22 +6,45 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const flowgen_1 = require("flowgen");
 const node_fs_1 = __importDefault(require("node:fs"));
 const node_path_1 = __importDefault(require("node:path"));
-module.exports = async (paths) => {
-    for (const p of paths) {
-        await processFile(p);
-    }
+const find_1 = __importDefault(require("lodash/find"));
+const digest_1 = require("./digest");
+module.exports = async ({ paths, digests }) => {
+    const digestPromises = paths.map(p => processFile(p, digests));
+    return await Promise.all(digestPromises);
 };
-const processFile = (f) => new Promise((resolve, reject) => {
-    const flowdef = (0, flowgen_1.beautify)(flowgen_1.compiler.compileDefinitionFile(f, { inexact: false }));
-    const fixedFlowdef = fixFlowdef(flowdef);
-    const p = node_path_1.default.parse(f);
-    const regexExec = /(.*).d/.exec(p.name);
+const flowDefFilePath = (filePath) => {
+    const parsedPath = node_path_1.default.parse(filePath);
+    const regexExec = /(.*).d/.exec(parsedPath.name);
     if (regexExec === null) {
         throw new Error('Unexpected RegExp failure');
     }
     const name = regexExec[1];
-    const filename = `${p.dir}/${name}.js.flow`;
-    node_fs_1.default.writeFile(filename, `// @flow
+    return `${parsedPath.dir}/${name}.js.flow`;
+};
+const processFile = async (filePath, digests) => {
+    const outputFilePath = flowDefFilePath(filePath);
+    const hasGeneratedInterface = node_fs_1.default.existsSync(outputFilePath);
+    const incomingDigest = (0, digest_1.computeDigest)(filePath);
+    if (!hasGeneratedInterface) {
+        await genFlowDef(filePath);
+        return incomingDigest;
+    }
+    else {
+        const matchingDigest = (0, find_1.default)(digests, cachedDigest => (0, digest_1.compare)(incomingDigest, cachedDigest));
+        if (matchingDigest !== undefined) {
+            return matchingDigest;
+        }
+        else {
+            await genFlowDef(filePath);
+            return incomingDigest;
+        }
+    }
+};
+const genFlowDef = (filePath) => new Promise((resolve, reject) => {
+    const outputFilePath = flowDefFilePath(filePath);
+    const flowdef = (0, flowgen_1.beautify)(flowgen_1.compiler.compileDefinitionFile(filePath, { inexact: false }));
+    const fixedFlowdef = fixFlowdef(flowdef);
+    node_fs_1.default.writeFile(outputFilePath, `// @flow
 ${fixedFlowdef}`, e => {
         if (e)
             reject(e);
